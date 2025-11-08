@@ -1,39 +1,41 @@
 package main
 
 import (
-    "log"
+	"context"
+	"log"
+	"time"
 
-    "github.com/gofiber/fiber/v2"
-    
-)
-import (
-    "context"
-    "time"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var quizCollection *mongo.Collection
 
 func main() {
-    app := fiber.New()
+	// initialize DB (best to handle errors in real apps)
+	setupDb()
 
-    app.Get("/", index)
+	app := fiber.New()
+
+	app.Get("/", index)
 	app.Get("/api/quizzes", getQuizzes)
 
 	log.Fatal(app.Listen(":3000"))
 }
 
-func setupDb(){
+func setupDb() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
-		panic(err) //crash the app
+		log.Fatalf("mongo connect: %v", err)
 	}
 
-	quizCollection := client.Database("quiz").Collection("quizzes")
+	// assign to package-level variable
+	quizCollection = client.Database("quiz").Collection("quizzes")
 }
 
 func index(c *fiber.Ctx) error {
@@ -45,11 +47,12 @@ func getQuizzes(c *fiber.Ctx) error {
 	if err != nil {
 		panic(err)
 	}
-	list := []map[string]any{
-		map[string]any{
-			"id":    1,
-			"title": "Sample Quiz",
-		},
+
+	var quizzes []map[string]any
+	err = cursor.All(context.Background(), &quizzes)
+	if err != nil {
+		panic(err)
 	}
-	return c.JSON(list)
+
+	return c.JSON(quizzes)
 }
