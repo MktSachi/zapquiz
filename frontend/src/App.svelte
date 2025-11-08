@@ -3,6 +3,10 @@
   import viteLogo from '/vite.svg'
   import Counter from './lib/Counter.svelte'
     import { on } from 'svelte/events';
+    import Button from './lib/Button.svelte';
+    import QuizCard from './lib/QuizCard.svelte';
+
+    let quizzes: {_id: string, name: string}[] = [];
 
   async function getQuizzes(){
     try {
@@ -16,14 +20,17 @@
       }
 
       const json = await response.json();
-      console.log(json);
-      alert('Quizzes fetched — check console');
+      quizzes = json;
+      
     } catch (err) {
       // network error (CORS, connection refused, DNS, etc.)
       console.error('Network/fetch error', err);
       alert('Failed to fetch quizzes — network error (see console)');
     }
   }
+
+  
+ 
 // successful communication with websocket server and client
   function connect(){
     let websocket = new WebSocket("ws://localhost:3000/ws"); //ws mean route
@@ -39,6 +46,14 @@
 </script>
 <button on:click={getQuizzes}>Get Quizzes</button>
 <button on:click={connect}>Connect WebSocket</button>
+
+{#each quizzes as quiz}
+  <QuizCard quiz={quiz} />
+{/each}
+
+<Button>
+cool button
+</Button>
 <main>
   <div>
     <a href="https://vite.dev" target="_blank" rel="noreferrer">
